@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Install Lua 5.1 (required by Prometheus)
-RUN apk add --no-cache lua5.1 lua5.1-dev
+RUN apk add --no-cache lua5.1
 
 # Clone the original Prometheus repository
 RUN git clone https://github.com/prometheus-lua/Prometheus.git /prometheus
