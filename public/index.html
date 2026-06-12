@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prometheus Lua Obfuscator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ff6b6b;
+        }
+        .card {
+            background: #1e1e2f;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        textarea, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+        }
+        textarea {
+            background: #0d0d1a;
+            color: #cfcfcf;
+            font-family: monospace;
+            resize: vertical;
+        }
+        select, button {
+            background: #2c2c3a;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button {
+            background: #ff6b6b;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #e55a5a;
+            transform: scale(1.02);
+        }
+        pre {
+            background: #0d0d1a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #aaa;
+        }
+        hr {
+            border-color: #2c2c3a;
+        }
+        .flex-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .flex-buttons button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔥 Prometheus Lua Obfuscator</h1>
+
+    <div class="card">
+        <h3>📝 Input Lua Code</h3>
+        <textarea id="inputCode" rows="12" placeholder="-- Paste your Lua script here&#10;print('Hello World')"></textarea>
+
+        <h3>⚙️ Preset</h3>
+        <select id="preset">
+            <option value="Minify">Minify</option>
+            <option value="Weak">Weak</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Strong">Strong</option>
+        </select>
+
+        <div class="flex-buttons">
+            <button id="obfuscateBtn">🔒 Obfuscate</button>
+            <button id="clearBtn">🗑️ Clear Output</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <div class="card">
+        <h3>🔮 Obfuscated Code</h3>
+        <pre id="output">// Obfuscated result will appear here</pre>
+        <button id="copyBtn">📋 Copy to Clipboard</button>
+    </div>
+
+    <div class="card">
+        <h3>📂 Or Upload .lua File</h3>
+        <input type="file" id="fileInput" accept=".lua,.txt">
+        <button id="uploadBtn">⬆️ Upload & Obfuscate</button>
+        <div id="uploadStatus" class="status"></div>
+    </div>
+</div>
+
+<script>
+    const inputCode = document.getElementById('inputCode');
+    const presetSelect = document.getElementById('preset');
+    const obfuscateBtn = document.getElementById('obfuscateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const outputPre = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const statusDiv = document.getElementById('status');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    async function obfuscate(code, preset) {
+        statusDiv.innerText = '⏳ Obfuscating... Please wait.';
+        try {
+            const response = await fetch('/obfuscate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, preset })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Unknown error');
+            outputPre.innerText = data.obfuscated;
+            statusDiv.innerText = '✅ Obfuscation successful!';
+        } catch (err) {
+            statusDiv.innerText = `❌ Error: ${err.message}`;
+            outputPre.innerText = `// Error:\n${err.message}`;
+        }
+    }
+
+    obfuscateBtn.addEventListener('click', () => {
+        const code = inputCode.value.trim();
+        if (!code) {
+            statusDiv.innerText = '❌ Please enter Lua code first.';
+            return;
+        }
+        const preset = presetSelect.value;
+        obfuscate(code, preset);
+    });
+
+    clearBtn.addEventListener('click', () => {
+        outputPre.innerText = '// Obfuscated result will appear here';
+        statusDiv.innerText = '';
+        inputCode.value = '';
+    });
+
+    copyBtn.addEventListener('click', () => {
+        const text = outputPre.innerText;
+        if (text && !text.startsWith('// Obfuscated')) {
+            navigator.clipboard.writeText(text);
+            alert('📋 Copied to clipboard!');
+        } else {
+            alert('Nothing to copy.');
+        }
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            uploadStatus.innerText = '❌ Select a .lua file first.';
+            return;
+        }
+        const preset = presetSelect.value;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('preset', preset);
+
+        uploadStatus.innerText = '⏳ Uploading and obfuscating...';
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            outputPre.innerText = data.obfuscated;
+            uploadStatus.innerText = '✅ File obfuscated successfully!';
+            statusDiv.innerText = '✅ File processed.';
+        } catch (err) {
+            uploadStatus.innerText = `❌ Upload failed: ${err.message}`;
+        }
+    });
+</script>
+</body>
+  </html>
