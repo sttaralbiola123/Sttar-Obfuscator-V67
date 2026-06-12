@@ -48,6 +48,11 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Catch-all to serve the frontend for any unmatched routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
